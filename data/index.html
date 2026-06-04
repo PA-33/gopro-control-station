@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>GoPro Bridge</title>
+<style>
+:root {
+  /* Surfaces — warm, slightly blue-grey rather than pure black */
+  --bg:#0d0f12;
+  --surface:#15181d;
+  --surface2:#1e222a;
+  --surface3:#272c36;
+  --border:#2a2f39;
+  --border-strong:#3a4150;
+
+  /* Accents — deep magenta */
+  --accent:#cc02a4;
+  --accent-press:#a3007f;
+  --accent-glow:rgba(204,2,164,.28);
+  --purple:#6c0b96;
+  --purple-press:#550f7e;
+  --purple-glow:rgba(139,31,184,.28);
+  --orange:#ff7a1a;
+  --orange-press:#e85d00;
+  --green:#22c55e;
+  --red:#ef4444;
+  --red-press:#dc2626;
+  --yellow:#facc15;
+
+  /* Text */
+  --text:#e8eaed;
+  --text-dim:#b4bac4;
+  --muted:#7a818d;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100dvh}
+body{
+  background:
+    radial-gradient(1200px 600px at 50% -200px, #1f1726 0%, transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  display:flex;flex-direction:column;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  font-size:16px;
+}
+
+/* Header */
+header{
+  background:linear-gradient(180deg, var(--surface) 0%, rgba(21,24,29,.85) 100%);
+  padding:14px 18px;display:flex;
+  justify-content:space-between;align-items:center;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  backdrop-filter:blur(8px);
+}
+header h1{font-size:2.1rem;font-weight:700;letter-spacing:-.015em}
+.status-row{display:flex;gap:8px}
+.pill{
+  display:flex;align-items:center;gap:6px;font-size:.72rem;font-weight:500;
+  background:var(--surface2);padding:5px 10px;border-radius:999px;
+  color:var(--text-dim);border:1px solid var(--border);
+}
+.dot{
+  width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;
+  box-shadow:0 0 0 0 currentColor;
+  transition:background .2s;
+}
+.dot.ok{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,.5)}
+
+/* Tabs */
+nav{
+  display:flex;gap:8px;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  padding:10px 12px;
+}
+nav button{
+  flex:1;padding:14px 8px;color:var(--text-dim);
+  font-size:1.05rem;font-weight:600;cursor:pointer;
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:12px;
+  transition:color .15s, background .15s, border-color .15s, box-shadow .15s;
+  min-height:60px;
+}
+nav button.active{
+  color:#fff;
+  background:var(--accent);
+  border-color:var(--accent);
+  box-shadow:0 1px 0 rgba(255,255,255,.18) inset, 0 4px 14px var(--accent-glow);
+}
+nav button:active{transform:scale(.97)}
+nav button:not(.active):active{background:var(--surface3);border-color:var(--border-strong)}
+
+/* Main */
+main{flex:1;overflow-y:auto;padding:18px;overscroll-behavior:contain}
+.tab{display:none}.tab.active{display:block;animation:fadeIn .2s ease-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Buttons — bigger touch targets, more depth */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:14px 18px;min-height:48px;
+  border:none;border-radius:12px;font-size:.95rem;font-weight:600;
+  cursor:pointer;user-select:none;
+  transition:transform .08s ease, background .15s, box-shadow .15s;
+  letter-spacing:.005em;
+}
+.btn:active{transform:scale(.97)}
+
+.btn-accent{
+  background:var(--accent);color:#fff;
+  box-shadow:0 1px 0 rgba(255,255,255,.18) inset, 0 4px 14px var(--accent-glow);
+}
+.btn-accent:active{background:var(--accent-press)}
+
+.btn-purple{
+  background:var(--purple);color:#fff;
+  box-shadow:0 1px 0 rgba(255,255,255,.18) inset, 0 4px 14px var(--purple-glow);
+}
+.btn-purple:active{background:var(--purple-press)}
+
+.btn-orange{
+  background:var(--orange);color:#fff;
+  box-shadow:0 1px 0 rgba(255,255,255,.15) inset, 0 4px 14px rgba(255,122,26,.25);
+}
+.btn-orange:active{background:var(--orange-press)}
+
+.btn-ghost{
+  background:var(--surface2);color:var(--text);
+  border:1px solid var(--border);
+}
+.btn-ghost:active{background:var(--surface3);border-color:var(--border-strong)}
+
+.btn-danger{
+  background:var(--red);color:#fff;
+  box-shadow:0 1px 0 rgba(255,255,255,.15) inset;
+}
+.btn-danger:active{background:var(--red-press)}
+.btn-danger:disabled{
+  background:var(--surface2);color:var(--muted);
+  box-shadow:none;cursor:not-allowed;opacity:.6;
+}
+
+.btn-full{width:100%}
+.btn-lg{padding:22px;font-size:1.15rem;border-radius:14px;min-height:60px}
+
+/* Grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* Section */
+.section{margin-bottom:22px}
+.label{
+  font-size:.95rem;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--text-dim);
+  margin-bottom:12px;font-weight:700;
+}
+
+/* Shutter — the hero button */
+#btn-shutter{
+  background:var(--orange);
+  width:100%;padding:30px;font-size:1.5rem;
+  font-weight:800;border:none;border-radius:18px;color:#fff;cursor:pointer;
+  margin-bottom:18px;letter-spacing:.05em;
+  min-height:84px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.2) inset,
+    0 0 0 1px rgba(255,122,26,.4),
+    0 10px 30px -8px rgba(255,122,26,.5);
+  transition:transform .08s, background .2s, box-shadow .2s;
+}
+#btn-shutter:active{transform:scale(.98);background:var(--orange-press)}
+#btn-shutter.active{
+  background:var(--green);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.2) inset,
+    0 0 0 1px rgba(34,197,94,.4),
+    0 10px 30px -8px rgba(34,197,94,.5);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 1px 0 rgba(255,255,255,.2) inset, 0 0 0 1px rgba(34,197,94,.4), 0 10px 30px -8px rgba(34,197,94,.5)}
+  50%   {box-shadow:0 1px 0 rgba(255,255,255,.2) inset, 0 0 0 1px rgba(34,197,94,.7), 0 10px 40px -4px rgba(34,197,94,.7)}
+}
+
+/* Gallery */
+.toolbar{display:flex;gap:10px;margin-bottom:14px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.thumb-spinner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+               color:var(--muted);font-size:.75rem}
+.thumb img{opacity:0;transition:opacity .25s}
+.thumb img.loaded{opacity:1}
+.thumb{
+  position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;
+  background:var(--surface2);cursor:pointer;
+  border:1px solid var(--border);
+  transition:border-color .15s, transform .08s;
+}
+.thumb:active{transform:scale(.96);border-color:var(--accent)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .badge{
+  position:absolute;bottom:4px;right:4px;
+  background:rgba(0,0,0,.7);color:#fff;
+  font-size:.6rem;font-weight:600;padding:2px 6px;border-radius:5px;
+  backdrop-filter:blur(4px);
+}
+.thumb .video-icon{
+  position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;font-size:1.8rem;background:rgba(0,0,0,.4);
+}
+.empty{
+  text-align:center;color:var(--muted);
+  padding:56px 16px;font-size:.9rem;line-height:1.6;
+}
+
+/* Modal */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.7);
+  backdrop-filter:blur(8px);
+  z-index:100;
+  align-items:center;justify-content:center;padding:16px;
+}
+.overlay.open{display:flex;animation:fadeIn .2s ease-out}
+.modal{
+  background:var(--surface);border-radius:18px;
+  padding:20px;width:100%;max-width:440px;
+  border:1px solid var(--border);
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.modal h3{margin-bottom:14px;font-size:.95rem;word-break:break-all;font-weight:600}
+.modal img{
+  width:100%;border-radius:10px;margin-bottom:14px;display:block;
+  background:var(--surface2);
+}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+/* Live */
+.video-wrap{
+  position:relative;background:#000;
+  border-radius:14px;overflow:hidden;
+  aspect-ratio:16/9;width:100%;margin-bottom:14px;
+  border:1px solid var(--border);
+}
+video{width:100%;height:100%;object-fit:contain;background:#000}
+.video-wrap:fullscreen video,
+.video-wrap:-webkit-full-screen video{object-fit:contain}
+.vid-ph{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:var(--muted);text-align:center;padding:20px;font-size:.9rem;line-height:1.6;
+}
+.fs-btn{
+  --fs-btn-size:56px;
+  position:absolute;top:10px;right:10px;
+  background:rgba(0,0,0,.6);color:#ff00d9;border:1px solid rgba(255,255,255,.15);
+  border-radius:10px;padding:0;font-size:calc(var(--fs-btn-size) * 0.72);
+  line-height:1;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:2;
+  backdrop-filter:blur(4px);
+  width:var(--fs-btn-size);height:var(--fs-btn-size);
+  min-width:var(--fs-btn-size);min-height:var(--fs-btn-size);
+}
+.fs-btn:active{background:rgba(0,0,0,.85)}
+
+select{
+  width:100%;padding:14px 14px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;color:var(--text);font-size:.95rem;
+  margin-bottom:10px;
+  appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%237a818d' d='M6 8L0 0h12z'/></svg>");
+  background-repeat:no-repeat;background-position:right 14px center;
+  padding-right:36px;
+  min-height:48px;
+}
+select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-glow)}
+
+/* Range */
+.range-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.range-row input[type=range]{
+  flex:1;accent-color:var(--accent);
+  height:32px;
+}
+.range-row .val{
+  min-width:64px;text-align:right;font-size:.9rem;font-weight:600;color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+
+/* Config */
+.form-group{margin-bottom:14px}
+.form-group label{
+  display:block;font-size:.75rem;color:var(--text-dim);
+  margin-bottom:6px;font-weight:500;
+}
+.form-group input{
+  width:100%;padding:14px 14px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-size:.95rem;
+  min-height:48px;
+  transition:border-color .15s, box-shadow .15s;
+}
+.form-group input:focus{
+  border-color:var(--accent);outline:none;
+  box-shadow:0 0 0 3px var(--accent-glow);
+}
+.form-group input::placeholder{color:var(--muted)}
+.note{
+  font-size:.78rem;color:var(--muted);
+  margin-top:12px;line-height:1.6;
+  padding:10px 12px;
+  background:var(--surface2);
+  border-left:2px solid var(--border-strong);
+  border-radius:6px;
+}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(8px);
+  background:var(--surface3);
+  border:1px solid var(--border-strong);
+  border-radius:12px;
+  padding:11px 20px;font-size:.88rem;font-weight:500;
+  z-index:200;opacity:0;
+  transition:opacity .25s, transform .25s;
+  pointer-events:none;white-space:nowrap;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>GoPro Bridge</h1>
+  <div class="status-row">
+    <div class="pill"><span class="dot" id="d-wifi"></span><span id="l-wifi">WiFi</span></div>
+    <div class="pill"><span class="dot" id="d-ble"></span><span id="l-ble">BLE</span></div>
+  </div>
+</header>
+
+<nav id="nav">
+  <button onclick="tab('control',this)">Controle</button>
+  <button onclick="tab('gallery',this)">Galerie</button>
+  <button class="active" onclick="tab('live',this)">Live</button>
+  <button onclick="tab('config',this)">Config</button>
+</nav>
+
+<main>
+
+<!-- ───── CONTROLE ───── -->
+<div class="tab" id="tab-control">
+  <button id="btn-shutter" onclick="toggleShutter()">SHUTTER</button>
+
+  <div class="section">
+    <div class="label">Mode preset</div>
+    <div class="grid2">
+      <button class="btn btn-ghost" id="m-video"     onclick="setMode('video')">Video</button>
+      <button class="btn btn-ghost" id="m-photo"     onclick="setMode('photo')">Photo</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Boutons moteur</div>
+    <div class="grid2">
+      <button class="btn btn-ghost" id="bm-step" onclick="setBtnMode(false)">Pas-a-pas</button>
+      <button class="btn btn-ghost" id="bm-hold" onclick="setBtnMode(true)">Continu</button>
+    </div>
+    <div class="range-row" style="margin-top:10px">
+      <span style="font-size:.75rem;color:var(--muted);min-width:80px">Pas (deg)</span>
+      <input type="range" id="r-step" min="1" max="30" step="0.5" value="7"
+             oninput="onStepInput()" onchange="commitStep()">
+      <span class="val" id="v-step">7.0</span>
+    </div>
+    <div class="range-row">
+      <span style="font-size:.75rem;color:var(--muted);min-width:80px">Vit. (deg/s)</span>
+      <input type="range" id="r-speed" min="10" max="300" step="5" value="100"
+             oninput="onSpeedInput()" onchange="commitSpeed()">
+      <span class="val" id="v-speed">100</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Commandes</div>
+    <button class="btn btn-purple btn-full" onclick="bleCmd('/ble/sleep')">Sleep</button>
+  </div>
+</div>
+
+<!-- ───── GALERIE ───── -->
+<div class="tab" id="tab-gallery">
+  <div class="toolbar">
+    <button class="btn btn-accent" style="flex:1" onclick="loadGallery()">Actualiser</button>
+    <button class="btn btn-danger" id="btn-del" onclick="deleteSelected()" disabled>Supprimer</button>
+  </div>
+  <div id="gallery"><div class="empty">Appuie sur Actualiser</div></div>
+</div>
+
+<!-- ───── LIVE ───── -->
+<div class="tab active" id="tab-live">
+  <div class="video-wrap" id="video-wrap">
+    <video id="vid" autoplay muted playsinline></video>
+    <div class="vid-ph" id="vid-ph">Aucun flux actif.<br>Selectionne une source ci-dessous.</div>
+    <button class="fs-btn" id="fs-btn" onclick="toggleFullscreen()" title="Plein ecran">⛶</button>
+  </div>
+  <select id="dev-sel"><option value="">-- Source video --</option></select>
+  <div class="grid2">
+    <button class="btn btn-accent" onclick="startLive()">Demarrer</button>
+    <button class="btn btn-ghost"  onclick="stopLive()">Arreter</button>
+  </div>
+  <p class="note" style="margin-top:12px">
+    Connecte la carte de capture HDMI via USB-C avant d'ouvrir cet onglet.
+    Elle apparaitra dans la liste des sources.
+  </p>
+</div>
+
+<!-- ───── CONFIG ───── -->
+<div class="tab" id="tab-config">
+  <div class="section">
+    <div class="label">WiFi GoPro (STA)</div>
+    <div class="form-group"><label>SSID GoPro</label><input id="c-gssid" type="text" placeholder="GPxxxxxxxx"></div>
+    <div class="form-group"><label>Mot de passe GoPro</label><input id="c-gpass" type="password" placeholder="Laisser vide si aucun"></div>
+    <div class="form-group"><label>IP GoPro</label><input id="c-gip" type="text" value="10.5.5.9"></div>
+  </div>
+  <div class="section">
+    <div class="label">Hotspot Bridge (AP)</div>
+    <div class="form-group"><label>Nom du hotspot</label><input id="c-bssid" type="text" placeholder="GoPro-Bridge"></div>
+    <div class="form-group"><label>Mot de passe (min 8 car.)</label><input id="c-bpass" type="password" placeholder="••••••••"></div>
+  </div>
+  <button class="btn btn-accent btn-full btn-lg" onclick="saveConfig()">Enregistrer</button>
+  <p class="note">Un redemarrage de l'ESP32 est necessaire apres modification.</p>
+
+  <div class="section" style="margin-top:22px">
+    <div class="label">Source video par defaut</div>
+    <select id="cfg-dev-sel" onchange="saveVideoSourcePref()">
+      <option value="">Auto (UGREEN si detectee)</option>
+    </select>
+    <p class="note">
+      Camera / carte de capture selectionnee automatiquement a l'ouverture de
+      l'onglet Live. Stocke dans ce navigateur uniquement.
+    </p>
+  </div>
+
+  <div class="section" style="margin-top:22px">
+    <div class="label">Nouveau peripherique</div>
+    <a class="btn btn-ghost btn-full" href="/cert.crt" download="gopro-bridge.crt">
+      Telecharger le certificat
+    </a>
+    <p class="note">
+      Installe ce fichier sur ton ordinateur ou ton telephone pour faire disparaitre
+      l'avertissement "Connexion non securisee". Une fois installe, recharge la page.
+    </p>
+  </div>
+</div>
+
+</main>
+
+<!-- Modal photo -->
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="m-title"></h3>
+    <img id="m-img" src="" alt="">
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal()">Fermer</button>
+      <a id="m-dl" class="btn btn-accent" href="#" download style="text-decoration:none">Télécharger</a>
+      <button class="btn btn-danger" onclick="deleteModal()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────
+let shutterActive = false;
+let selectedPaths = new Set();
+let modalPath     = null;
+let liveStream    = null;
+// currentMode sera resynchronise depuis l'ESP au chargement (syncModeFromEsp).
+// La valeur localStorage n'est qu'un fallback avant la 1ere reponse /status.
+let currentMode   = localStorage.getItem('mode') || 'photo';
+if (currentMode === 'timelapse') currentMode = 'photo';        // mode timelapse retire de l'UI
+let btnHoldCont   = true;
+
+// ── Tabs ───────────────────────────────────────
+function tab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'gallery') loadGallery();
+  if (id === 'live')    enumDevices().then(autoStartUgreen);
+  if (id === 'config')  { loadConfig(); loadVideoSources(); }
+}
+
+// ── Toast ──────────────────────────────────────
+function toast(msg, ms = 2200) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+}
+
+// ── Status polling ─────────────────────────────
+// Suspend pendant le chargement des thumbnails : evite que /status grignote
+// une session TLS au moment ou la galerie en a deja besoin (heap tres juste).
+let pollPaused = false;
+async function pollStatus() {
+  if (pollPaused) return;
+  try {
+    const d = await fetch('/status').then(r => r.json());
+    document.getElementById('d-wifi').className = 'dot' + (d.sta_connected ? ' ok' : '');
+    document.getElementById('d-ble').className  = 'dot' + (d.ble_connected ? ' ok' : '');
+    document.getElementById('l-ble').textContent = d.ble_connected ? (d.ble_device || 'BLE') : 'BLE';
+  } catch {}
+}
+
+// L'ESP est la source de verite sur le mode reel de la GoPro. On s'aligne
+// dessus au chargement pour ne pas afficher "video" alors que la cam est en
+// photo (sinon le bouton RECORD prend une photo en se croyant en video).
+const MODE_FROM_PRESET = { 1000: 'video', 1001: 'photo', 1002: 'photo' };
+async function syncModeFromEsp() {
+  try {
+    const d = await fetch('/status').then(r => r.json());
+    const m = MODE_FROM_PRESET[d.active_mode];
+    if (m) { currentMode = m; localStorage.setItem('mode', m); }
+    shutterActive = !!d.recording;   // si la cam filme deja, le bouton montre STOP
+    updateShutterButton();
+    updateModePills();
+  } catch {}
+}
+
+setInterval(pollStatus, 5000); pollStatus();
+updateShutterButton(); updateModePills(); loadBtnMode(); loadStepSpeed();
+syncModeFromEsp();
+// Onglet Live actif au demarrage : enumere et tente l'auto-demarrage UGREEN
+enumDevices().then(autoStartUgreen);
+
+// ── BLE helpers ───────────────────────────────
+async function bleCmd(endpoint) {
+  try {
+    const d = await fetch(endpoint, { method:'POST' }).then(r => r.json());
+    if (!d.ok) toast('Erreur : ' + (d.error || '?'));
+    return !!d.ok;
+  } catch { toast('Erreur reseau'); return false; }
+}
+
+function updateShutterButton() {
+  const btn = document.getElementById('btn-shutter');
+  if (currentMode === 'photo') {
+    btn.textContent = 'PHOTO';
+    btn.classList.remove('active');
+    shutterActive = false;
+  } else if (shutterActive) {
+    btn.textContent = 'STOP';
+    btn.classList.add('active');
+  } else {
+    btn.textContent = currentMode === 'video' ? 'RECORD' : 'START';
+    btn.classList.remove('active');
+  }
+}
+
+function updateModePills() {
+  const modes = { video: 'btn-accent', photo: 'btn-purple' };
+  for (const m of ['video','photo']) {
+    const el = document.getElementById('m-' + m);
+    if (!el) continue;
+    const active = m === currentMode;
+    el.classList.toggle(modes[m], active);
+    el.classList.toggle('btn-ghost',  !active);
+  }
+}
+
+async function toggleShutter() {
+  if (currentMode === 'photo') {
+    // Single-shot: one press is enough, no off needed
+    if (await bleCmd('/ble/shutter/on')) {
+      const btn = document.getElementById('btn-shutter');
+      btn.classList.add('active');
+      setTimeout(() => btn.classList.remove('active'), 250);
+    }
+    return;
+  }
+  // video / timelapse: keep toggle behaviour
+  if (shutterActive) {
+    if (await bleCmd('/ble/shutter/off')) { shutterActive = false; updateShutterButton(); }
+  } else {
+    if (await bleCmd('/ble/shutter/on'))  { shutterActive = true;  updateShutterButton(); }
+  }
+}
+
+async function setMode(m) {
+  if (await bleCmd('/ble/mode/' + m)) {
+    currentMode = m;
+    localStorage.setItem('mode', m);
+    shutterActive = false;
+    updateShutterButton();
+    updateModePills();
+    toast('Mode ' + m);
+  }
+}
+
+// ── Motor button mode (step / hold) ───────────
+function updateBtnModePills() {
+  document.getElementById('bm-hold').classList.toggle('btn-accent',  btnHoldCont);
+  document.getElementById('bm-hold').classList.toggle('btn-ghost',  !btnHoldCont);
+  document.getElementById('bm-step').classList.toggle('btn-accent', !btnHoldCont);
+  document.getElementById('bm-step').classList.toggle('btn-ghost',   btnHoldCont);
+}
+
+async function loadBtnMode() {
+  try {
+    const d = await fetch('/foc/button-mode').then(r => r.json());
+    btnHoldCont = !!d.hold_continuous;
+    updateBtnModePills();
+  } catch {}
+}
+
+async function setBtnMode(holdContinuous) {
+  try {
+    const d = await fetch('/foc/button-mode', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ hold_continuous: holdContinuous })
+    }).then(r => r.json());
+    if (d.ok) {
+      btnHoldCont = !!d.hold_continuous;
+      updateBtnModePills();
+      toast(btnHoldCont ? 'Boutons : continu' : 'Boutons : pas-a-pas');
+    } else {
+      toast('Erreur : ' + (d.error || '?'));
+    }
+  } catch { toast('Erreur reseau'); }
+}
+
+// ── Step / speed sliders ───────────────────────
+let stepCommitTimer = null, speedCommitTimer = null;
+
+async function loadStepSpeed() {
+  try {
+    const d = await fetch('/foc/step').then(r => r.json());
+    if (typeof d.step_deg === 'number') {
+      document.getElementById('r-step').value  = d.step_deg;
+      document.getElementById('v-step').textContent = d.step_deg.toFixed(1);
+    }
+    if (typeof d.speed_dps === 'number') {
+      document.getElementById('r-speed').value = d.speed_dps;
+      document.getElementById('v-speed').textContent = Math.round(d.speed_dps);
+    }
+  } catch {}
+}
+
+function onStepInput() {
+  const v = parseFloat(document.getElementById('r-step').value);
+  document.getElementById('v-step').textContent = v.toFixed(1);
+  // debounce : commit 250 ms apres le dernier mouvement du slider
+  clearTimeout(stepCommitTimer);
+  stepCommitTimer = setTimeout(commitStep, 250);
+}
+
+function onSpeedInput() {
+  const v = parseFloat(document.getElementById('r-speed').value);
+  document.getElementById('v-speed').textContent = Math.round(v);
+  clearTimeout(speedCommitTimer);
+  speedCommitTimer = setTimeout(commitSpeed, 250);
+}
+
+async function commitStep() {
+  const v = parseFloat(document.getElementById('r-step').value);
+  try {
+    await fetch('/foc/step', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ step_deg: v })
+    });
+  } catch { toast('Erreur reseau'); }
+}
+
+async function commitSpeed() {
+  const v = parseFloat(document.getElementById('r-speed').value);
+  try {
+    await fetch('/foc/step', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ speed_dps: v })
+    });
+  } catch { toast('Erreur reseau'); }
+}
+
+// ── Gallery ───────────────────────────────────
+function escAttr(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')
+                  .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escText(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// File d'attente FIFO, max 1 thumbnail en vol simultanement vers l'ESP.
+// L'IntersectionObserver enfile chaque <img data-src> dans l'ordre ou il
+// apparait a l'ecran ; on traite la queue avec une concurrence bornee.
+const THUMB_CONCURRENCY = 1;
+const THUMB_MAX_RETRIES = 2;     // 3 tentatives au total (1 + 2 retries)
+const THUMB_RETRY_DELAY = 2000;  // ms entre tentatives
+let thumbInFlight = 0;
+const thumbQueue = [];
+
+function thumbDequeue() {
+  while (thumbInFlight < THUMB_CONCURRENCY && thumbQueue.length) {
+    const img = thumbQueue.shift();
+    if (!img.isConnected || img.src) continue;     // l'utilisateur a peut-etre relance loadGallery
+    thumbInFlight++;
+    pollPaused = true;                              // suspend /status pendant la rafale
+    const finish = () => {
+      thumbInFlight--;
+      if (thumbInFlight === 0 && thumbQueue.length === 0) pollPaused = false;
+      thumbDequeue();
+    };
+    img.onload = () => {
+      img.classList.add('loaded');
+      img.previousElementSibling?.remove();
+      finish();
+    };
+    img.onerror = () => {
+      const tries = (img._tries || 0) + 1;
+      img._tries = tries;
+      if (tries <= THUMB_MAX_RETRIES && img.isConnected) {
+        // GoPro souvent lente sur le 1er fetch (media server qui se reveille).
+        // On retente apres un delai, en ajoutant un cache-buster pour ne pas
+        // tomber sur une eventuelle reponse mise en cache par le navigateur.
+        const sp = document.createElement('span');
+        sp.className = 'thumb-spinner';
+        sp.textContent = '…' + tries;
+        img.previousElementSibling?.replaceWith(sp);
+        setTimeout(() => {
+          if (!img.isConnected) { finish(); return; }
+          img.src = img.dataset.src + (img.dataset.src.includes('?') ? '&' : '?') + 'r=' + tries;
+        }, THUMB_RETRY_DELAY);
+        // Note : on ne decremente PAS thumbInFlight ici, on garde le slot
+        // jusqu'a succes ou abandon final.
+        return;
+      }
+      const ph = Object.assign(document.createElement('span'),
+                               { className: 'thumb-spinner', textContent: '⚠' });
+      img.replaceWith(ph);
+      finish();
+    };
+    img.src = img.dataset.src;
+  }
+}
+
+function startThumbLoader(galleryEl) {
+  // Reset l'etat si une galerie precedente etait en cours
+  thumbQueue.length = 0; thumbInFlight = 0;
+
+  const imgs = galleryEl.querySelectorAll('img[data-src]');
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      io.unobserve(e.target);
+      thumbQueue.push(e.target);
+    }
+    thumbDequeue();
+  }, { rootMargin: '200px' });   // pre-charge 200 px avant que ca entre dans le viewport
+
+  imgs.forEach(img => io.observe(img));
+}
+
+async function loadGallery() {
+  const el = document.getElementById('gallery');
+  selectedPaths.clear(); updateDelBtn();
+
+  // Refuse si WiFi STA pas pret : sinon chaque fetch ouvrirait une session
+  // TLS qui timeout sans rien faire, et frangmente le heap pour rien.
+  if (!document.getElementById('d-wifi').classList.contains('ok')) {
+    el.innerHTML = '<div class="empty">WiFi GoPro pas encore connecte.<br>' +
+                   '<small>Attends que le pill WiFi devienne vert (~30 s apres allumage).</small></div>';
+    return;
+  }
+
+  el.innerHTML = '<div class="empty">Chargement...</div>';
+
+  // Step 1: fetch
+  let resp;
+  try { resp = await fetch('/gopro/media/list'); }
+  catch(e) {
+    el.innerHTML = `<div class="empty">Reseau<br><small style="color:#f88">${escText(e.message)}</small></div>`;
+    return;
+  }
+
+  // Step 2: read body as text
+  let text;
+  try { text = await resp.text(); }
+  catch(e) {
+    el.innerHTML = `<div class="empty">Lecture echouee<br><small style="color:#f88">${escText(e.message)}</small></div>`;
+    return;
+  }
+
+  // Step 3: parse JSON
+  let d;
+  try { d = JSON.parse(text); }
+  catch(e) {
+    const preview = text.length > 120 ? text.slice(0,120) + '...' : text;
+    el.innerHTML = `<div class="empty">JSON invalide (${resp.status})<br><small style="color:#f88">${escText(e.message)}</small><br><small style="color:#aaa">${escText(preview)}</small></div>`;
+    return;
+  }
+
+  if (d.error) {
+    el.innerHTML = `<div class="empty">WiFi GoPro non connecte<br><small>${escText(d.error)}</small></div>`;
+    return;
+  }
+
+  // Step 4: render
+  try {
+    const files = (d.media || []).flatMap(dir =>
+      (dir.fs || []).map(f => ({
+        path: dir.d + '/' + f.n,
+        name: f.n,
+        size: +f.s,
+        // GoPro renvoie 'cre'/'mod' en epoch (string) — on s'en sert pour trier.
+        ts:   parseInt(f.cre || f.mod || '0', 10)
+      }))
+    );
+    if (!files.length) { el.innerHTML = '<div class="empty">Aucun media</div>'; return; }
+
+    // Tri recents en premier : timestamp decroissant, fallback sur le nom
+    // decroissant (les fichiers GoPro sont numerotes en sequence chronologique).
+    files.sort((a, b) => (b.ts - a.ts) || b.name.localeCompare(a.name));
+
+    el.innerHTML = '<div class="gallery">' + files.map((f, i) => {
+      const isVid = /\.(mp4|lrv)$/i.test(f.name);
+      const name  = f.path.split('/').pop();
+      // Pour les videos, on garde l'icone (la GoPro ne renvoie pas de poster).
+      // Pour les photos, on charge directement le thumbnail JPEG via le proxy.
+      const inner = isVid
+        ? `<div style="position:absolute;inset:0;display:flex;flex-direction:column;
+                      align-items:center;justify-content:center;gap:6px;padding:6px">
+             <span style="font-size:2.2rem">🎬</span>
+             <span style="font-size:.7rem;color:#aaa;word-break:break-all;text-align:center">${escText(name)}</span>
+           </div>`
+        : `<span class="thumb-spinner">…</span>
+           <img decoding="async"
+                data-src="/gopro/media/thumbnail?path=${encodeURIComponent(f.path)}"
+                alt="${escAttr(name)}">`;
+      return `<div class="thumb" data-path="${escAttr(f.path)}" data-vid="${isVid ? '1' : '0'}" data-idx="${i}">
+        ${inner}
+        <span class="badge">${isVid ? 'MP4' : 'JPG'}</span>
+      </div>`;
+    }).join('') + '</div>';
+
+    // Bind clicks via JS instead of inline handlers — avoids any issue with quotes in filenames
+    el.querySelectorAll('.thumb').forEach(t => {
+      t.addEventListener('click', () => {
+        thumbClick(t.dataset.path, t.dataset.vid === '1');
+      });
+    });
+
+    // Throttle des thumbnails : l'ESP n'a que 3 sessions TLS et chaque
+    // fetch ouvre aussi une connexion HTTP vers la GoPro. On charge 2 a la
+    // fois, dans l'ordre d'apparition a l'ecran via IntersectionObserver.
+    startThumbLoader(el);
+  } catch(e) {
+    el.innerHTML = `<div class="empty">Rendu echoue<br><small style="color:#f88">${escText(e.message)}</small></div>`;
+  }
+}
+
+function thumbClick(path, isVid) {
+  if (isVid) { toast('Telechargement video non supporte'); return; }
+  modalPath = path;
+  const filename = path.split('/').pop();
+  document.getElementById('m-title').textContent = filename;
+  document.getElementById('m-img').src = '/gopro/media/thumbnail?path=' + encodeURIComponent(path);
+  const dl = document.getElementById('m-dl');
+  dl.href = '/download?path=' + encodeURIComponent(path);
+  dl.download = filename;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('overlay')) {
+    document.getElementById('overlay').classList.remove('open');
+    modalPath = null;
+  }
+}
+
+async function deleteModal() {
+  if (!modalPath || !confirm('Supprimer ce fichier ?')) return;
+  await doDelete(modalPath); closeModal(); loadGallery();
+}
+
+function updateDelBtn() {
+  document.getElementById('btn-del').disabled = selectedPaths.size === 0;
+}
+
+async function deleteSelected() {
+  if (!selectedPaths.size || !confirm('Supprimer ' + selectedPaths.size + ' fichier(s) ?')) return;
+  for (const p of selectedPaths) await doDelete(p);
+  selectedPaths.clear(); updateDelBtn(); loadGallery();
+}
+
+async function doDelete(path) {
+  try {
+    const d = await fetch('/gopro/media/delete?path=' + encodeURIComponent(path),
+                          { method:'DELETE' }).then(r => r.json());
+    toast(d.ok ? 'Supprime' : 'Erreur suppression');
+    return !!d.ok;
+  } catch { toast('Erreur reseau'); return false; }
+}
+
+// ── Live (getUserMedia — HDMI capture USB-C) ──
+function hasMediaDevices() {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+
+// Identifiant cible pour l'auto-selection par defaut (carte HDMI UGREEN 15389),
+// utilise quand l'utilisateur n'a pas choisi de source par defaut explicite.
+const PREFERRED_DEV_PATTERNS = [/ugreen/i, /15389/i, /2b89:5389/i];
+
+function getPreferredVideoLabel() { return localStorage.getItem('preferredVideoLabel') || ''; }
+
+// Choisit le device a pre-selectionner : (1) le label choisi par l'utilisateur
+// dans Config s'il est present, sinon (2) la carte UGREEN par defaut.
+function pickPreferredDevice(devs) {
+  const prefLabel = getPreferredVideoLabel();
+  if (prefLabel) {
+    const exact = devs.find(d => d.label === prefLabel);
+    if (exact) return exact;
+  }
+  return devs.find(d => PREFERRED_DEV_PATTERNS.some(p => p.test(d.label || ''))) || null;
+}
+
+async function enumDevices() {
+  if (!hasMediaDevices()) {
+    const sel = document.getElementById('dev-sel');
+    sel.innerHTML = '<option value="">HTTPS requis (non disponible en HTTP)</option>';
+    document.getElementById('vid-ph').innerHTML =
+      'getUserMedia requiert HTTPS.<br>Cette fonctionnalite est indisponible sur http://';
+    return null;
+  }
+  try {
+    // Permission dummy pour debloquer les labels d'enumerateDevices().
+    await navigator.mediaDevices.getUserMedia({ video:true }).catch(() => {});
+    const devs = (await navigator.mediaDevices.enumerateDevices())
+                   .filter(d => d.kind === 'videoinput');
+    const sel = document.getElementById('dev-sel');
+    sel.innerHTML = '<option value="">-- Source video --</option>' +
+      devs.map((d,i) => `<option value="${d.deviceId}">${d.label || 'Camera ' + (i+1)}</option>`).join('');
+    if (!devs.length) {
+      sel.innerHTML = '<option value="">Aucune source detectee</option>';
+      return null;
+    }
+    const preferred = pickPreferredDevice(devs);
+    if (preferred) sel.value = preferred.deviceId;
+    return preferred || null;
+  } catch { return null; }
+}
+
+async function autoStartUgreen(preferred) {
+  // Auto-demarrage uniquement si on a une source preferee (choisie ou UGREEN),
+  // pour ne pas ouvrir une webcam quelconque sans le consentement de l'user.
+  if (preferred && document.getElementById('tab-live').classList.contains('active')) {
+    startLive();
+  }
+}
+
+// ── Config : source video par defaut ──────────
+async function loadVideoSources() {
+  const sel = document.getElementById('cfg-dev-sel');
+  if (!sel || !hasMediaDevices()) return;
+  try {
+    await navigator.mediaDevices.getUserMedia({ video:true }).catch(() => {});
+    const devs = (await navigator.mediaDevices.enumerateDevices())
+                   .filter(d => d.kind === 'videoinput');
+    const pref = getPreferredVideoLabel();
+    sel.innerHTML = '<option value="">Auto (UGREEN si detectee)</option>' +
+      devs.map(d => {
+        const label = d.label || 'Camera';
+        const selAttr = (label === pref) ? ' selected' : '';
+        return `<option value="${escAttr(label)}"${selAttr}>${escText(label)}</option>`;
+      }).join('');
+  } catch {}
+}
+
+function saveVideoSourcePref() {
+  const v = document.getElementById('cfg-dev-sel').value;
+  if (v) localStorage.setItem('preferredVideoLabel', v);
+  else   localStorage.removeItem('preferredVideoLabel');
+  toast(v ? ('Source par defaut : ' + v) : 'Source par defaut : Auto');
+}
+
+// ── Fullscreen ─────────────────────────────────
+// iOS Safari : pas de fullscreen sur un <div>, uniquement sur <video> via
+// webkitEnterFullscreen(). En sortie, iOS detache le srcObject -> ecran noir
+// au retour. On ecoute donc webkitendfullscreen pour ré-attacher le stream
+// et relancer la lecture.
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// Renvoie le preset mode actuel a la GoPro a l'entree du fullscreen. Ramene
+// la cam dans le bon mode si elle a glisse (utile avant une demo). En video,
+// on skip si un enregistrement est deja en cours : recharger le preset
+// arreterait la prise.
+function reaffirmCurrentMode() {
+  if (currentMode === 'photo') {
+    bleCmd('/ble/mode/photo');
+  } else if (currentMode === 'video' && !shutterActive) {
+    bleCmd('/ble/mode/video');
+  }
+}
+
+function toggleFullscreen() {
+  const wrap = document.getElementById('video-wrap');
+  const vid  = document.getElementById('vid');
+
+  if (isIOS && vid.webkitEnterFullscreen) {
+    // iOS : fullscreen natif sur l'element <video> directement
+    if (!liveStream) { toast('Demarre d\'abord le flux'); return; }
+    reaffirmCurrentMode();
+    try { vid.webkitEnterFullscreen(); }
+    catch (e) { toast('Plein ecran refuse : ' + e.message); }
+    return;
+  }
+
+  // Desktop / Android : Fullscreen API standard sur le wrapper
+  const fs = document.fullscreenElement || document.webkitFullscreenElement;
+  if (fs) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    reaffirmCurrentMode();
+    (wrap.requestFullscreen || wrap.webkitRequestFullscreen).call(wrap)
+      .catch(e => toast('Plein ecran refuse : ' + e.message));
+  }
+}
+
+// Quand iOS sort de son fullscreen video natif, srcObject est purge -> ecran
+// noir. On le ré-attache et on relance la lecture. Idem pour un pause
+// inattendu (changement d'onglet, interruption systeme).
+function bindLiveRecovery() {
+  const vid = document.getElementById('vid');
+  vid.addEventListener('webkitendfullscreen', () => {
+    if (liveStream && vid.srcObject !== liveStream) vid.srcObject = liveStream;
+    vid.play().catch(() => {});
+  });
+  vid.addEventListener('pause', () => {
+    // Si le stream est toujours actif mais la video est en pause sans raison,
+    // on relance (iOS aime mettre pause apres certaines transitions UI).
+    if (liveStream && liveStream.getVideoTracks().some(t => t.readyState === 'live')) {
+      vid.play().catch(() => {});
+    }
+  });
+}
+bindLiveRecovery();
+
+async function startLive() {
+  if (!hasMediaDevices()) { toast('HTTPS requis pour acceder a la camera', 3500); return; }
+  stopLive();
+  const deviceId = document.getElementById('dev-sel').value;
+  // Ask for 16:9 1080p — capture device will downscale if needed.
+  const videoConstraints = {
+    width:       { ideal: 1920 },
+    height:      { ideal: 1080 },
+    aspectRatio: { ideal: 16/9 }
+  };
+  if (deviceId) videoConstraints.deviceId = { exact: deviceId };
+  try {
+    liveStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+    document.getElementById('vid').srcObject = liveStream;
+    document.getElementById('vid-ph').style.display = 'none';
+  } catch(e) {
+    // Fall back to any video if the 16:9 request was rejected
+    try {
+      liveStream = await navigator.mediaDevices.getUserMedia(
+        deviceId ? { video:{ deviceId:{ exact:deviceId } } } : { video:true }
+      );
+      document.getElementById('vid').srcObject = liveStream;
+      document.getElementById('vid-ph').style.display = 'none';
+    } catch(e2) { toast('Acces source refuse : ' + e2.message, 3500); }
+  }
+}
+
+function stopLive() {
+  if (liveStream) { liveStream.getTracks().forEach(t => t.stop()); liveStream = null; }
+  document.getElementById('vid').srcObject = null;
+  document.getElementById('vid-ph').style.display = 'flex';
+}
+
+// ── Config ─────────────────────────────────────
+async function loadConfig() {
+  try {
+    const d = await fetch('/config').then(r => r.json());
+    document.getElementById('c-gssid').value = d.gopro_ssid  || '';
+    document.getElementById('c-gip').value   = d.gopro_ip    || '10.5.5.9';
+    document.getElementById('c-bssid').value = d.bridge_ssid || '';
+  } catch {}
+}
+
+async function saveConfig() {
+  const body = {
+    gopro_ssid:  document.getElementById('c-gssid').value,
+    gopro_pass:  document.getElementById('c-gpass').value,
+    gopro_ip:    document.getElementById('c-gip').value,
+    bridge_ssid: document.getElementById('c-bssid').value,
+    bridge_pass: document.getElementById('c-bpass').value,
+  };
+  try {
+    const d = await fetch('/config', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    }).then(r => r.json());
+    toast(d.ok ? 'Config sauvegardee – redemarre l\'ESP32' : ('Erreur : ' + d.error), 3500);
+  } catch { toast('Erreur reseau'); }
+}
+</script>
+</body>
+</html>

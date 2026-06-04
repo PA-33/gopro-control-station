@@ -1,0 +1,259 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+\definecolor{accent}{HTML}{CC02A4}
+\definecolor{soft}{HTML}{555555}
+
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textcolor{soft}{GoPro Gimbal Bridge}}
+\lhead{\textcolor{soft}{Mode d'emploi}}
+\cfoot{\thepage}
+
+\newcommand{\btn}[1]{\textbf{[#1]}}
+
+\title{\textbf{\textcolor{accent}{GoPro Gimbal Bridge}}\\[0.3em]
+       \large Mode d'emploi}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+
+\noindent
+Ce système permet de piloter un nacelle (gimbal) motorisée à deux axes et une
+caméra GoPro depuis une interface web, ainsi que via des boutons physiques.
+Il fournit le contrôle des mouvements, le déclenchement photo/vidéo, la
+visualisation du flux vidéo en direct et l'accès à la galerie de la caméra.
+
+\tableofcontents
+\vspace{1em}
+
+% =====================================================================
+\section{Mise en route}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Alimenter le système.} À l'allumage, les LEDs affichent une
+        animation arc-en-ciel, puis l'état du système.
+  \item \textbf{Se connecter au réseau WiFi} émis par le boîtier
+        (par défaut : \texttt{GoPro-Bridge}). Le mot de passe est défini dans
+        l'onglet Configuration.
+  \item \textbf{Ouvrir la page} dans un navigateur :
+        \texttt{https://192.168.4.1}
+  \item \textbf{Premier appareil :} un avertissement « Connexion non sécurisée »
+        apparaît. Cliquer sur \emph{Avancé} puis \emph{Continuer}. Pour le faire
+        disparaître définitivement, télécharger et installer le certificat
+        (voir section Configuration).
+\end{enumerate}
+
+\noindent
+La connexion à la caméra (Bluetooth puis WiFi) se fait automatiquement au
+démarrage. Comptez environ 30 secondes avant que tout soit opérationnel.
+
+% =====================================================================
+\section{Les boutons physiques}
+
+Quatre boutons commandent les moteurs, un bouton commande le déclencheur.
+
+\begin{center}
+\begin{tabular}{>{\raggedright}p{4.5cm} p{9.5cm}}
+\toprule
+\textbf{Action} & \textbf{Effet} \\
+\midrule
+\btn{M1 +} / \btn{M1 --} & Déplace le moteur de l'axe 1 dans un sens ou l'autre. \\
+\btn{M2 +} / \btn{M2 --} & Déplace le moteur de l'axe 2 dans un sens ou l'autre. \\
+\btn{Déclencheur} & Prend une photo, ou démarre / arrête un enregistrement vidéo selon le mode actif. \\
+\addlinespace
+\btn{M1 +} \emph{et} \btn{M1 --} ensemble & Réactive le moteur 1 s'il a été coupé (sécurité). Il se recentre alors automatiquement. \\
+\btn{M2 +} \emph{et} \btn{M2 --} ensemble & Idem pour le moteur 2. \\
+\addlinespace
+\textbf{Les 4 boutons moteur maintenus 3 s} & Lance la \emph{calibration} des butées (voir section dédiée). \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Le comportement des boutons moteur (pas-à-pas ou continu) et la vitesse se
+règlent depuis l'interface web (onglet Contrôle).
+
+% =====================================================================
+\section{Les voyants lumineux (LEDs)}
+
+La bande comporte 7 LEDs qui renseignent en un coup d'\oe il sur l'état du
+système.
+
+\begin{center}
+\begin{tabular}{c >{\raggedright}p{4cm} p{8.5cm}}
+\toprule
+\textbf{LED} & \textbf{Rôle} & \textbf{Signification} \\
+\midrule
+1 & Bluetooth (caméra) & Vert = connectée \quad Rouge = non connectée \\
+2 & Réseau WiFi & Vert = un appareil est connecté au boîtier \\
+3 & État moteurs & Éteinte = tout va bien \quad Jaune = moteur 1 coupé \quad Bleu = moteur 2 coupé \quad Rouge = les deux coupés \\
+4 & Prise de vue & Flash blanc = photo prise \quad Rouge clignotant = enregistrement vidéo en cours \\
+5--7 & Batterie & Du vert (pleine) vers le rouge (faible) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+\textbf{Cas particuliers :}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Toutes les LEDs en rose} : une calibration est en cours.
+  \item \textbf{Toutes les LEDs rouges clignotantes} : batterie critique, recharger
+        ou remplacer rapidement.
+\end{itemize}
+
+% =====================================================================
+\section{L'interface web}
+
+L'interface se compose de quatre onglets accessibles en haut de l'écran :
+\textbf{Contrôle}, \textbf{Galerie}, \textbf{Live} et \textbf{Config}.
+
+% ---------------------------------------------------------------------
+\subsection{Onglet Contrôle}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Bouton principal (déclencheur)} : son libellé s'adapte au mode.
+        \begin{itemize}
+          \item En mode Photo : \emph{PHOTO} — prend une photo à chaque appui.
+          \item En mode Vidéo : \emph{RECORD} pour démarrer, \emph{STOP} pour
+                arrêter (le bouton devient vert et clignote pendant
+                l'enregistrement).
+        \end{itemize}
+  \item \textbf{Mode preset} : choix entre \emph{Vidéo} et \emph{Photo}. Le mode
+        sélectionné est conservé et réappliqué automatiquement à la caméra.
+  \item \textbf{Boutons moteur} : choix du comportement des boutons physiques.
+        \begin{itemize}
+          \item \emph{Pas-à-pas} : chaque appui déplace le moteur d'un pas fixe.
+          \item \emph{Continu} : le moteur bouge tant que le bouton est maintenu.
+        \end{itemize}
+  \item \textbf{Curseur « Pas »} : règle l'amplitude d'un pas (en degrés) en mode
+        pas-à-pas.
+  \item \textbf{Curseur « Vitesse »} : règle la vitesse (en degrés par seconde) en
+        mode continu.
+  \item \textbf{Sleep} : met la caméra en veille.
+\end{itemize}
+
+% ---------------------------------------------------------------------
+\subsection{Onglet Galerie}
+
+Affiche les photos et vidéos présentes sur la caméra.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Actualiser} : recharge la liste des médias.
+  \item \textbf{Vignettes} : les aperçus se chargent progressivement. Cliquer sur
+        une photo pour l'ouvrir en grand.
+  \item \textbf{Dans l'aperçu} : \emph{Télécharger} pour récupérer la photo, ou
+        \emph{Supprimer} pour l'effacer de la caméra.
+  \item \textbf{Supprimer} (barre d'outils) : efface les éléments sélectionnés.
+\end{itemize}
+
+\noindent
+\textit{Remarque : le chargement des vignettes peut prendre quelques secondes,
+c'est normal. La galerie nécessite que le voyant WiFi soit vert.}
+
+% ---------------------------------------------------------------------
+\subsection{Onglet Live}
+
+Affiche le flux vidéo en direct de la caméra via la carte de capture HDMI.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Source vidéo} : menu déroulant pour choisir l'entrée vidéo. La
+        carte de capture est sélectionnée automatiquement si elle est détectée.
+  \item \textbf{Démarrer} / \textbf{Arrêter} : lance ou stoppe l'affichage du flux.
+  \item \textbf{Plein écran} (icône en haut à droite de la vidéo) : passe en
+        plein écran. Sur tablette/téléphone, toucher l'écran fait apparaître le
+        bouton de sortie ; on peut aussi balayer vers le bas.
+\end{itemize}
+
+\noindent
+\textit{Brancher la carte de capture HDMI avant d'ouvrir cet onglet. Le passage
+en plein écran réaffirme également le mode (photo ou vidéo) auprès de la caméra.}
+
+% ---------------------------------------------------------------------
+\subsection{Onglet Config}
+
+Permet de paramétrer les connexions et les préférences.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{WiFi GoPro} : nom (SSID), mot de passe et adresse IP de la caméra.
+  \item \textbf{Hotspot Bridge} : nom et mot de passe du réseau WiFi émis par le
+        boîtier.
+  \item \textbf{Enregistrer} : sauvegarde la configuration. \emph{Un redémarrage
+        est nécessaire pour appliquer les changements réseau.}
+  \item \textbf{Source vidéo par défaut} : choisit la caméra / carte de capture
+        utilisée automatiquement à l'ouverture de l'onglet Live.
+  \item \textbf{Télécharger le certificat} : pour installer le certificat de
+        sécurité sur un nouvel appareil et supprimer l'avertissement du
+        navigateur.
+\end{itemize}
+
+% =====================================================================
+\section{Calibration des butées}
+
+La calibration détermine les limites de débattement de chaque axe pour éviter de
+forcer contre les butées mécaniques.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Maintenir les 4 boutons moteur} (M1+, M1--, M2+, M2--)
+        simultanément pendant 3 secondes.
+  \item Toutes les LEDs passent au \textbf{rose} : la calibration est en cours.
+        Les moteurs se déplacent lentement jusqu'à détecter chaque butée.
+  \item À la fin, les limites sont \textbf{enregistrées} et conservées même après
+        extinction. Les LEDs reviennent à l'affichage normal.
+\end{enumerate}
+
+\noindent
+\textit{Des valeurs par défaut sont utilisées tant qu'aucune calibration n'a été
+effectuée. Il n'est généralement pas nécessaire de recalibrer sauf en cas de
+modification mécanique.}
+
+% =====================================================================
+\section{Sécurités automatiques}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Protection surcourant} : si un moteur force trop longtemps
+        (obstacle, butée), il est automatiquement coupé pour le protéger. La LED
+        d'état moteur l'indique (jaune ou bleu).
+  \item \textbf{Réactivation} : appuyer simultanément sur les deux boutons d'un
+        même axe (ou couper/rallumer depuis le système). Le moteur se
+        \textbf{recentre} alors au milieu de sa plage pour se dégager.
+  \item \textbf{Limites logicielles} : les moteurs ne dépassent jamais les butées
+        calibrées.
+\end{itemize}
+
+% =====================================================================
+\section{Dépannage rapide}
+
+\begin{center}
+\begin{tabular}{>{\raggedright}p{6cm} p{8cm}}
+\toprule
+\textbf{Symptôme} & \textbf{Solution} \\
+\midrule
+Le voyant Bluetooth reste rouge & Vérifier que la caméra est allumée et à portée. La connexion se rétablit automatiquement. \\
+La galerie n'affiche rien & Attendre que le voyant WiFi soit vert (\textasciitilde30 s après l'allumage). \\
+Un moteur ne bouge plus & Il a probablement été coupé par sécurité : réactiver avec les deux boutons de l'axe. \\
+Le flux vidéo est noir & Vérifier le branchement HDMI, puis Arrêter et Démarrer à nouveau dans l'onglet Live. \\
+Avertissement de sécurité du navigateur & Installer le certificat (onglet Config). \\
+Le mode affiché ne correspond pas & Recharger la page : elle se resynchronise sur le mode réel de la caméra. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}
