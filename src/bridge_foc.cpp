@@ -584,9 +584,16 @@ static bool loadCalFromNVS() {
   return ok;
 }
 
-static void runCalibration() {
+// Retourne true si la calibration a abouti, false en cas de timeout.
+// En cas de timeout, les soft-limits de l'appelant doivent etre restaurees
+// pour ne pas laisser les moteurs sans protection logicielle.
+static bool runCalibration() {
   if (s_cal_cb) s_cal_cb(true);
   Serial.println("[CAL] Demarrage calibration butees (ADC2 avec retry Wi-Fi)");
+
+  // Suspend la detection de stall : le courant va volontairement spiker
+  // a chaque end-stop, on ne veut pas que la tache de fond coupe les moteurs.
+  bridgeCurrentSetStallEnabled(false);
 
   CalState c1 = { 1, PH_RAMP_POS, 0, 0, 0, 0 };
   CalState c2 = { 2, PH_RAMP_POS, 0, 0, 0, 0 };
@@ -597,11 +604,13 @@ static void runCalibration() {
 
   uint32_t t_start = millis();
   uint32_t t_last_tick = 0;
+  bool timed_out = false;
 
   while (c1.phase != PH_DONE || c2.phase != PH_DONE) {
     if (millis() - t_start > CAL_TIMEOUT_MS) {
-      Serial.println("[CAL] TIMEOUT : abandon. Soft-limits non installees.");
-      return;
+      Serial.println("[CAL] TIMEOUT : abandon. Limites precedentes restaurees.");
+      timed_out = true;
+      break;
     }
 
     // FOC à pleine vitesse (sinon le moteur ne suit pas le target)
@@ -616,6 +625,18 @@ static void runCalibration() {
       calStep(motor1, c1, target1, r1);
       calStep(motor2, c2, target2, r2);
     }
+
+    // Yield obligatoire : sinon la task watchdog (5 s) tire un reset, et
+    // les autres taches (BLE, HTTPS, currentTask sur core 1 quand meme,
+    // mais ici on est sur le main loop) sont privees du CPU.
+    vTaskDelay(0);
+  }
+
+  bridgeCurrentSetStallEnabled(true);
+
+  if (timed_out) {
+    if (s_cal_cb) s_cal_cb(false);
+    return false;
   }
 
   // Pose les soft-limits avec la marge de sécurité
@@ -636,6 +657,7 @@ static void runCalibration() {
     m2_soft_neg * RAD_TO_DEG, m2_soft_pos * RAD_TO_DEG);
   saveCalToNVS();
   if (s_cal_cb) s_cal_cb(false);
+  return true;
 }
 
 void bridgeFocSetup() {
@@ -725,12 +747,46 @@ void bridgeFocLoop() {
   if (cal_pending) {
     cal_pending     = false;
     cal_hold_active = false;
+
+    // Sauvegarde l'etat actuel pour pouvoir le restaurer si la calibration
+    // echoue (timeout). Sans ca, m*_cal_ok reste a false apres l'echec et
+    // les moteurs perdent toute protection logicielle jusqu'au reboot.
+    bool  bk_m1_ok = m1_cal_ok,    bk_m2_ok = m2_cal_ok;
+    float bk_m1_sn = m1_soft_neg,  bk_m1_sp = m1_soft_pos;
+    float bk_m2_sn = m2_soft_neg,  bk_m2_sp = m2_soft_pos;
+
     m1_cal_ok = false;
     m2_cal_ok = false;
-    runCalibration();
-    // Resynchronise les targets sur la position courante dans la nouvelle zone
-    target1 = clampM1(motor1.shaftAngle());
-    target2 = clampM2(motor2.shaftAngle());
+    bool ok = runCalibration();
+
+    if (!ok) {
+      // Restaure les limites precedentes : les nouvelles n'ont pas pu etre
+      // determinees. Si aucune calibration n'a jamais ete faite, on retombe
+      // sur les defauts hardcodes (m*_cal_ok etait true des le boot via
+      // bridgeFocSetup).
+      m1_cal_ok = bk_m1_ok;    m2_cal_ok = bk_m2_ok;
+      m1_soft_neg = bk_m1_sn;  m1_soft_pos = bk_m1_sp;
+      m2_soft_neg = bk_m2_sn;  m2_soft_pos = bk_m2_sp;
+    }
+
+    // Recentre EXPLICITEMENT les deux moteurs au milieu de leur range.
+    // Sans ca, le moteur qui finit sa calibration en dernier n'a pas le
+    // temps physique de bouger avant l'exit de runCalibration() et reste
+    // colle a sa butee. Velocity_limit reduite pour un retour doux.
+    if (m1_cal_ok) {
+      target1 = (m1_soft_neg + m1_soft_pos) * 0.5f;
+      motor1.velocity_limit = VEL_LIMIT_RETURN;
+      m1_returning = true;
+    } else {
+      target1 = motor1.shaftAngle();
+    }
+    if (m2_cal_ok) {
+      target2 = (m2_soft_neg + m2_soft_pos) * 0.5f;
+      motor2.velocity_limit = VEL_LIMIT_RETURN;
+      m2_returning = true;
+    } else {
+      target2 = motor2.shaftAngle();
+    }
     return;
   }
 

@@ -47,14 +47,21 @@ static int  m1_streak  = 0;
 static int  m2_streak  = 0;
 static bool m1_tripped = false;
 static bool m2_tripped = false;
+static volatile bool s_stall_enabled = true;   // false pendant la calibration
 
 void bridgeCurrentClearStall(int idx) {
     if (idx == 1) { m1_streak = 0; m1_tripped = false; }
     else if (idx == 2) { m2_streak = 0; m2_tripped = false; }
 }
 
+void bridgeCurrentSetStallEnabled(bool en) {
+    s_stall_enabled = en;
+    if (!en) { m1_streak = 0; m2_streak = 0; }   // reset les compteurs en cours
+}
+
 static void evalStall(int idx, int raw, bool ok, int& streak, bool& tripped) {
     if (!ok) return;                    // lecture ratée : on n'incrémente ni ne reset
+    if (!s_stall_enabled) { streak = 0; return; }   // calibration en cours
     if (tripped) return;                // déjà coupé, attend le réarmement utilisateur
     if (raw > STALL_RAW_THRESH) {
         if (++streak >= STALL_CONSECUTIVE) {
