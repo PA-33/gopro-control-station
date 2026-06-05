@@ -71,7 +71,8 @@ gopro-control-station/
 │       └── exports/            generated manufacturing files
 │
 └── docs/
-    └── mode_emploi.tex         end-user manual (French)
+    ├── user_manual.pdf           end-user manual
+    └── Mode_d_emploi.pdf         end-user manual (French)
 ```
 
 ## Quick start
