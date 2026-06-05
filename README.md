@@ -63,16 +63,12 @@ gopro-control-station/
 │   └── make_header.py          convert PEM into src/ssl_cert.h
 │
 ├── hardware/
-│   ├── cad/                    STL / STEP files for 3D-printed parts
-│   │   ├── base.stl
-│   │   ├── m1_arm.stl
-│   │   ├── m2_arm.stl
-│   │   ├── gopro_mount.stl
-│   │   ├── electronics_box.stl
-│   │   └── button_panel.stl
-│   └── schematic/              electrical schematic + PCB
-│       ├── schematic.pdf       rendered schematic for quick reference
-│       └── kicad/              KiCad project sources
+│   ├── cad/
+│   │   ├── source/             CAD source files
+│   │   └── exports/            exported 3D-printable files
+│   └── kicad/
+│       ├── gimbal_driver_board/ electrical schematic + PCB sources
+│       └── exports/            generated manufacturing files
 │
 └── docs/
     └── mode_emploi.tex         end-user manual (French)
@@ -116,9 +112,10 @@ printed on your camera (*Connections / Connect Device / GoPro App*),
 
 - **`docs/mode_emploi.tex`** — end-user manual (French). Buttons, LEDs,
   web interface, calibration procedure.
-- **`hardware/cad/`** — 3D-printable parts in STL format. Print
-  settings and assembly order are documented in §3 of the report.
-- **`hardware/schematic/`** — full electrical schematic. The pin
+- **`hardware/cad/`** — CAD sources and exports for the mechanical
+  parts. Print settings and assembly order are documented in §3 of the
+  report.
+- **`hardware/kicad/`** — full electrical schematic and PCB project. The pin
   assignments are also reproduced in §4 of the report and are
   hard-coded in the firmware (see `src/bridge_foc.cpp`).
 

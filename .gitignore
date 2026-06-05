@@ -23,3 +23,11 @@ docs/*.fdb_latexmk
 # Python
 __pycache__/
 *.pyc
+
+# KiCad local/generated files
+hardware/kicad/**/fp-info-cache
+hardware/kicad/**/*-backups/
+hardware/kicad/**/*.kicad_prl
+hardware/kicad/**/*.kicad_sch-bak
+hardware/kicad/**/*.kicad_pcb-bak
+hardware/kicad/**/*.kicad_sym-bak
